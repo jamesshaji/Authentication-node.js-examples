@@ -11,10 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
-    "connect-mongo": "^4.4.1",
     "express": "^4.17.1",
     "express-handlebars": "^5.3.3",
-    "express-session": "^1.17.2",
     "morgan": "^1.10.0"
   }
 }

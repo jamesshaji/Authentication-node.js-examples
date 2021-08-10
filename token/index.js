@@ -2,8 +2,6 @@ const path = require('path');
 const http = require('http');
 
 const express = require('express');
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
 
 const morgan = require('morgan');
 
@@ -22,16 +20,6 @@ app.use(bodyParser.json({ limit: "5mb" }));
 app.use(bodyParser.urlencoded({ extended: false, limit: "5mb" }));
 
 app.use(express.static(path.resolve(__dirname, 'public')));
-
-app.use(session({
-    secret: "basic-auth-secret",
-    cookie: { maxAge: 6000 },
-    store: new MongoStore({
-        mongoUrl: 'mongodb://localhost:55556/?readPreference=primary&appname=MongoDB%20Compass&ssl=false',
-        ttl: 24 * 60 * 60,
-        dbName: 'test-app'
-    })
-}))
 
 app.engine('.hbs', exphbs({ defaultLayout: 'layout', extname: '.hbs' }));
 app.set('views', path.join(__dirname + '', 'views'));
@@ -63,7 +51,6 @@ app.post('/login', (req, res) => {
     }
 
     if (username === 'james' && password === 'password') {
-        req.session.currentUser = username;
         res.redirect("/dashboard")
         return;
     } else {
@@ -78,11 +65,7 @@ app.get('/logout', (req, res) => {
 })
 
 function isUserLoggedIn(req, res, next) {
-    if (req.session.currentUser) {
-        next();
-    } else {
-        res.redirect("/login");
-    }
+    next();
 }
 
 const server = http.createServer(app);
