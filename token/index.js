@@ -9,12 +9,18 @@ const bodyParser = require("body-parser");
 
 const exphbs = require('express-handlebars');
 
+const jwt = require("jsonwebtoken");
+const cookieParser = require('cookie-parser');
+
 
 const app = express();
 
 const PORT = 3000;
 
 app.use(morgan('dev'));
+app.use(cookieParser());
+
+const SECRET_STRING = "Some random long string";
 
 app.use(bodyParser.json({ limit: "5mb" }));
 app.use(bodyParser.urlencoded({ extended: false, limit: "5mb" }));
@@ -35,7 +41,7 @@ app.get('/login', (req, res) => {
     res.render('login');
 })
 
-app.get('/dashboard', isUserLoggedIn,  (req, res) => {
+app.get('/dashboard', isUserLoggedIn, (req, res) => {
     res.render('dashboard');
 })
 
@@ -51,21 +57,47 @@ app.post('/login', (req, res) => {
     }
 
     if (username === 'james' && password === 'password') {
-        res.redirect("/dashboard")
+        console.log("Cookie set......");
+        var token = jwt.sign({ id: username }, SECRET_STRING, { expiresIn: 86400 });// 24 * 60 * 60 secs or 24 hours
+
+        res.cookie('token', token, { httpOnly: false });
+        res.render("dashboard");
         return;
     } else {
         res.render("login", { message: "username or password incorrect" })
     }
 })
 
+
 app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        res.redirect('/login');
-    })
+    res.clearCookie('token');
+    res.redirect('/login');
 })
 
 function isUserLoggedIn(req, res, next) {
-    next();
+    let token;
+    if(!req.cookie){
+        res.redirect('/login');
+    }
+    token = req.cookie.token;
+
+    if (!token) {
+        //res.status(403);
+        //res.send({ message: "token not available!" });
+        res.render("error", { message: "token not available!" });
+        return;
+    }
+
+    jwt.verify(token, SECRET_STRING, (err, decoded) => {
+        if (err) {
+            //res.status(401);
+            //res.send({ message: "Unauthorized access..." });
+            res.render("error", { message: "Unauthorized access..." });
+            return;
+        }
+        req.userId = decoded.id;
+        next();
+    });
 }
 
 const server = http.createServer(app);
